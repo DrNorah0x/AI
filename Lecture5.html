@@ -1,0 +1,1262 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Six Motors Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a lab bench. One instrument per tab: the plot on the left, its controls and readouts on the right. */
+:root {
+  --bg: #f5f6f9;
+  --panel: #ffffff;
+  --ink: #1b2240;
+  --muted: #5b6480;
+  --line: #d9deea;
+  --grid: #e8ebf3;
+  --navy: #1e2761;
+  --amber: #b26b00;
+  --teal: #0f7c75;
+  --rose: #b0365a;
+  --violet: #6a4fb3;
+  --olive: #6d7a1f;
+  --fail-wash: rgba(178,107,0,.10);
+  --navy-wash: rgba(30,39,97,.08);
+  --chip: #eef1f8;
+  --font-display: "Source Serif 4", Cambria, Georgia, serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11152a; --panel: #1a2038; --ink: #e8ebf6; --muted: #a3abc6; --line: #2e3656; --grid: #242b47;
+    --navy: #8ea2ff; --amber: #f0b44a; --teal: #4fc7bd; --rose: #f07ea0; --violet: #b9a3ff; --olive: #c4cf6a;
+    --fail-wash: rgba(240,180,74,.12); --navy-wash: rgba(142,162,255,.10); --chip: #232a47;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11152a; --panel: #1a2038; --ink: #e8ebf6; --muted: #a3abc6; --line: #2e3656; --grid: #242b47;
+  --navy: #8ea2ff; --amber: #f0b44a; --teal: #4fc7bd; --rose: #f07ea0; --violet: #b9a3ff; --olive: #c4cf6a;
+  --fail-wash: rgba(240,180,74,.12); --navy-wash: rgba(142,162,255,.10); --chip: #232a47;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); font-weight: 600; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 4vw, 36px); line-height: 1.1; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); max-width: 68ch; margin: 0; }
+nav.tabs { display: grid; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.tabgroup { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+@media (max-width: 600px) { .tabgroup > span { flex-basis: 100%; } }
+.tabgroup > span { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; min-width: 150px; }
+.tbl { border-collapse: collapse; width: 100%; font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.tbl th { color: var(--muted); font-weight: 500; }
+.tbl tr.hl td { background: var(--fail-wash); font-weight: 500; }
+nav.tabs a {
+  text-decoration: none; color: var(--ink); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); font-weight: 500; display: inline-flex; gap: 8px; align-items: baseline;
+}
+nav.tabs a small { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+nav.tabs a[aria-current="page"] { background: var(--navy); border-color: var(--navy); color: var(--panel); }
+nav.tabs a[aria-current="page"] small { color: var(--panel); opacity: .8; }
+nav.tabs a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+section.sim { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { section.sim { grid-template-columns: minmax(0, 1fr); } }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.stage h2, .side h2 { font-family: var(--font-display); font-size: 20px; margin: 0; line-height: 1.2; }
+.stage p.hint { margin: 0; color: var(--muted); font-size: 13px; }
+svg.plot { width: 100%; height: auto; display: block; max-width: 100%; touch-action: none; }
+.side { display: grid; gap: 14px; min-width: 0; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.box h3 { margin: 0; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button {
+  font: inherit; font-weight: 500; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--ink); cursor: pointer;
+}
+button.primary { background: var(--navy); border-color: var(--navy); color: var(--panel); }
+button:disabled { opacity: .45; cursor: default; }
+label { font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+select, input[type="range"] { font: inherit; color: var(--ink); }
+select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); }
+input[type="range"] { width: 100%; accent-color: var(--amber); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.formula { font-family: var(--font-mono); font-size: 13px; background: var(--chip); border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: nowrap; }
+.log { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.55; max-height: 220px; overflow: auto; background: var(--chip); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; }
+.log div { white-space: pre-wrap; }
+.log .ok { color: var(--teal); }
+.log .bad { color: var(--rose); }
+.verdict { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; letter-spacing: .03em; }
+.pill.fail { color: var(--amber); }
+.pill.ok { color: var(--teal); }
+.pill.warn { color: var(--rose); }
+.note { font-size: 13.5px; color: var(--muted); margin: 0; }
+.note b { color: var(--ink); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.sw { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.sw.sq { border-radius: 2px; }
+.lesson { border-left: 3px solid var(--amber); padding-left: 12px; margin: 0; font-size: 14px; }
+footer { color: var(--muted); font-size: 12.5px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Artificial Intelligence 501819-3 · Lecture 5</div>
+    <h1>Six Motors Lab</h1>
+    <p class="lede">Eight small experiments on the motor data from the lecture, one for each main idea: preparing data, teaching a neuron, hidden layers, overfitting, and four ways of finding and using groups. Every number on the screen is computed live in your browser.</p>
+  </header>
+
+  <nav class="tabs" aria-label="Simulations">
+    <div class="tabgroup"><span>Part 2 · Data mining</span>
+      <a href="#preparation" data-tab="preparation">Why the units matter <small>slides 11 to 12</small></a>
+    </div>
+    <div class="tabgroup"><span>Part 3 · Neural networks</span>
+      <a href="#neuron" data-tab="neuron">Teach the neuron <small>slides 14 to 16</small></a>
+      <a href="#hidden" data-tab="hidden">Hidden layer <small>slide 17</small></a>
+      <a href="#overfitting" data-tab="overfitting">Overfitting <small>slide 22</small></a>
+    </div>
+    <div class="tabgroup"><span>Part 4 · Clustering</span>
+      <a href="#kmeans" data-tab="kmeans">k-means <small>slides 26 to 28</small></a>
+      <a href="#hierarchical" data-tab="hierarchical">Hierarchical <small>slide 29</small></a>
+      <a href="#density" data-tab="density">Density-based <small>slide 29</small></a>
+      <a href="#predict" data-tab="predict">Groups to predictions <small>slides 30 to 31</small></a>
+    </div>
+  </nav>
+
+  <!-- ================= NEURON ================= -->
+  <section class="sim" id="view-neuron">
+    <div class="stage">
+      <h2>One neuron, one straight line</h2>
+      <p class="hint">Amber circles failed, navy circles stayed healthy. The shaded side of the line is where the neuron answers "fail". Click or drag anywhere on the plot to move the new motor G.</p>
+      <svg class="plot" id="nPlot" viewBox="0 0 440 400" role="img" aria-label="Scatter plot of motors with the neuron's decision line"></svg>
+      <div class="legend" id="nLegend"></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Controls</h3>
+        <div class="row">
+          <label style="flex:1 1 160px">Data set
+            <select id="nData">
+              <option value="motors">The six motors</option>
+              <option value="xor">Two-way light switch (XOR)</option>
+            </select>
+          </label>
+          <label style="flex:1 1 160px">Learning rate: <span id="nRateOut">0.05</span>
+            <input type="range" id="nRate" min="0.01" max="0.3" step="0.01" value="0.05">
+          </label>
+        </div>
+        <div class="row">
+          <button class="primary" id="nStep">Show next example</button>
+          <button id="nPass">Run one pass</button>
+          <button id="nRun">Train until right</button>
+          <button id="nReset">Reset weights</button>
+        </div>
+      </div>
+      <div class="box">
+        <h3>The neuron now</h3>
+        <dl class="kv" id="nWeights"></dl>
+        <div class="formula">change = rate × (right answer − neuron's answer) × input</div>
+        <div class="verdict" id="nStatus"></div>
+      </div>
+      <div class="box">
+        <h3>Motor G</h3>
+        <div id="nG" class="note"></div>
+      </div>
+      <div class="box">
+        <h3>What happened, step by step</h3>
+        <div class="log" id="nLog" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= K-MEANS ================= -->
+  <section class="sim" id="view-kmeans" hidden>
+    <div class="stage">
+      <h2>k-means: assign, move, repeat</h2>
+      <p class="hint">Circles are motors, coloured by the centre they currently belong to. Squares are the centres. Grey circles have not been assigned yet. Click on the plot to move motor G.</p>
+      <svg class="plot" id="kPlot" viewBox="0 0 440 400" role="img" aria-label="Scatter plot of motors with cluster centres"></svg>
+      <div class="legend" id="kLegend"></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Controls</h3>
+        <div class="row">
+          <label style="flex:1 1 170px">Data set
+            <select id="kData">
+              <option value="motors">The six motors</option>
+              <option value="factory">A factory: 90 motors in three groups</option>
+              <option value="long">Two long groups (a hard case)</option>
+            </select>
+          </label>
+          <label style="flex:1 1 90px">Groups (k)
+            <select id="kK"><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
+          </label>
+          <label style="flex:1 1 170px">Starting centres
+            <select id="kStart">
+              <option value="bad">Bad start, as on slide 27</option>
+              <option value="random">Random data points</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button class="primary" id="kNext">Assign</button>
+          <button id="kRound">Run one round</button>
+          <button id="kRun">Run until settled</button>
+          <button id="kReset">Start again</button>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Progress</h3>
+        <dl class="kv" id="kStats"></dl>
+        <div class="verdict" id="kStatus"></div>
+      </div>
+      <div class="box">
+        <h3>Choosing k: look for the bend</h3>
+        <svg class="plot" id="kElbow" viewBox="0 0 420 180" role="img" aria-label="Tightness for each number of groups"></svg>
+        <p class="note">Tightness (total squared distance to the centres) for k = 1 to 6, best of 12 random starts. Adding groups always makes it smaller. The useful k is where the curve bends and extra groups stop helping much: 2 for the six motors, 3 for the factory.</p>
+      </div>
+      <div class="box">
+        <h3>Motor G</h3>
+        <div id="kG" class="note"></div>
+      </div>
+      <div class="box">
+        <h3>What happened, step by step</h3>
+        <div class="log" id="kLog" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= OVERFITTING ================= -->
+  <section class="sim" id="view-overfitting" hidden>
+    <div class="stage">
+      <h2>The student who memorised the answers</h2>
+      <p class="hint">Vibration score against age in years. Filled circles are the training motors the model learns from. Hollow circles are test motors it never sees. The dashed curve is the true pattern behind the data.</p>
+      <svg class="plot" id="oPlot" viewBox="0 0 440 400" role="img" aria-label="Training and test points with a fitted curve"></svg>
+      <div class="legend" id="oLegend"></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Controls</h3>
+        <label>Model flexibility (polynomial degree): <span id="oDegOut">3</span>
+          <input type="range" id="oDeg" min="1" max="10" step="1" value="3">
+        </label>
+        <div class="row">
+          <label style="flex:1 1 140px">Training motors
+            <select id="oN"><option value="10" selected>10</option><option value="15">15</option><option value="40">40</option></select>
+          </label>
+          <button id="oNew">Draw a new sample</button>
+          <button id="oBest">Pick the best on test data</button>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Error at this setting</h3>
+        <dl class="kv" id="oStats"></dl>
+        <div class="verdict" id="oStatus"></div>
+      </div>
+      <div class="box">
+        <h3>Error at every setting</h3>
+        <svg class="plot" id="oErr" viewBox="0 0 420 200" role="img" aria-label="Training and test error for each degree"></svg>
+        <div class="legend"><span><i class="sw" style="background:var(--navy)"></i>training error</span><span><i class="sw" style="background:var(--amber)"></i>test error</span><span>▲ off the top of the chart</span></div>
+      </div>
+      <p class="lesson">Training error always falls as the model gets more flexible. Test error falls, then rises again: past that point the model is memorising noise. That is why the honest score comes from data the model never saw.</p>
+    </div>
+  </section>
+
+  <!-- ================= PREPARATION ================= -->
+  <section class="sim" id="view-preparation" hidden>
+    <div class="stage">
+      <h2>Why the units matter</h2>
+      <p class="hint">The same six motors, now in real units: temperature in degrees Celsius and vibration in millimetres per second. Q is a new motor. Drag it around. Lines join Q to the motors that decide its prediction.</p>
+      <svg class="plot" id="pPlot" viewBox="0 0 440 400" role="img" aria-label="Motors in real units with the new motor Q and its nearest neighbours"></svg>
+      <div class="legend"><span><i class="sw" style="background:var(--amber)"></i>failed</span><span><i class="sw" style="background:var(--navy)"></i>healthy</span><span><i class="sw sq" style="border:2px solid var(--ink)"></i>new motor Q</span><span><i class="sw" style="background:var(--rose)"></i>faulty sensor reading</span></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Controls</h3>
+        <div class="row">
+          <label style="flex:1 1 200px">How distance is measured
+            <select id="pScale">
+              <option value="raw">Raw units (no preparation)</option>
+              <option value="minmax">Both rescaled to 1 to 10</option>
+            </select>
+          </label>
+          <label style="flex:1 1 120px">Neighbours that vote (k)
+            <select id="pK"><option value="1">1</option><option value="3" selected>3</option></select>
+          </label>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="pNoise"> Add a faulty sensor reading: one healthy motor reports 97 mm/s</label>
+      </div>
+      <div class="box">
+        <h3>Prediction for Q</h3>
+        <div class="verdict" id="pVerdict"></div>
+        <p class="note" id="pWhy"></p>
+      </div>
+      <div class="box">
+        <h3>Distances from Q, nearest first</h3>
+        <div style="overflow-x:auto"><table class="tbl" id="pTable"></table></div>
+      </div>
+      <p class="lesson">Your eye stretches each axis to fill the chart, so Q looks close to the failed motors. The algorithm does not. In raw units a gap of 20 degrees swamps any gap in vibration. Rescaling fixes that, but one bad reading can wreck the rescaling, which is why cleaning comes first (slide 12). The voting rule is k nearest neighbours, one of the ten algorithms on slide 11.</p>
+    </div>
+  </section>
+
+  <!-- ================= HIDDEN LAYER ================= -->
+  <section class="sim" id="view-hidden" hidden>
+    <div class="stage">
+      <h2>A hidden neuron solves the light switch</h2>
+      <p class="hint">The trained network from slide 17. Flip the two switches. Each neuron adds its weighted inputs and squashes the total into a number between 0 and 1.</p>
+      <svg class="plot" id="hNet" viewBox="0 0 440 300" role="img" aria-label="Network with two inputs, one hidden neuron and one output"></svg>
+      <div class="row">
+        <button class="primary" id="hS1">Switch 1: down</button>
+        <button class="primary" id="hS2">Switch 2: down</button>
+      </div>
+      <div style="overflow-x:auto"><table class="tbl" id="hTable"></table></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Now train one yourself with backpropagation</h3>
+        <p class="note">A fresh network with two hidden neurons and random weights. Each pass shows it the four switch positions, passes the error back, and nudges every weight.</p>
+        <div class="row">
+          <label style="flex:1 1 160px">Learning rate: <span id="hRateOut">0.5</span>
+            <input type="range" id="hRate" min="0.1" max="2" step="0.1" value="0.5">
+          </label>
+        </div>
+        <div class="row">
+          <button class="primary" id="hTrain">Train 500 passes</button>
+          <button id="hTrain5">Train 5,000 passes</button>
+          <button id="hNew">New random start</button>
+        </div>
+      </div>
+      <div class="box">
+        <h3>What the network answers for every switch position</h3>
+        <svg class="plot" id="hMap" viewBox="0 0 420 250" role="img" aria-label="Network output over all switch positions and error curve"></svg>
+        <div class="verdict" id="hStatus"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= HIERARCHICAL ================= -->
+  <section class="sim" id="view-hierarchical" hidden>
+    <div class="stage">
+      <h2>Hierarchical clustering: keep merging the closest</h2>
+      <p class="hint">Eight motors: the six from the lecture, G at (7, 7) and H at (4.5, 4.5). Every motor starts as its own group. Each step merges the two closest groups. Colours show the groups at the cut you choose.</p>
+      <svg class="plot" id="hcPlot" viewBox="0 0 440 400" role="img" aria-label="Scatter plot coloured by hierarchical groups"></svg>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Controls</h3>
+        <div class="row">
+          <label style="flex:1 1 200px">Distance between two groups
+            <select id="hcLink">
+              <option value="single">Closest pair (single link)</option>
+              <option value="complete">Farthest pair (complete link)</option>
+              <option value="average">Average of all pairs</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button class="primary" id="hcNext">Merge the closest two</button>
+          <button id="hcAll">Show every merge</button>
+          <button id="hcReset">Start again</button>
+        </div>
+        <label>Cut the tree into <span id="hcCutOut">2</span> groups
+          <input type="range" id="hcCut" min="1" max="8" step="1" value="2">
+        </label>
+      </div>
+      <div class="box">
+        <h3>The tree of merges (dendrogram)</h3>
+        <svg class="plot" id="hcTree" viewBox="0 0 420 240" role="img" aria-label="Dendrogram"></svg>
+        <p class="note">Height is the distance at which two groups merged. A long vertical gap means a natural place to cut. No k is chosen in advance: you choose the cut afterwards.</p>
+      </div>
+      <div class="box">
+        <h3>What happened, step by step</h3>
+        <div class="log" id="hcLog" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DENSITY ================= -->
+  <section class="sim" id="view-density" hidden>
+    <div class="stage">
+      <h2>Density-based clustering: crowds and loners</h2>
+      <p class="hint">A ring of motors around a tight cluster, plus a few strays. A group is any crowded region. Points with no crowd nearby are marked as noise instead of being forced into a group.</p>
+      <svg class="plot" id="dPlot" viewBox="0 0 440 400" role="img" aria-label="Scatter plot coloured by density-based clusters"></svg>
+      <div class="legend"><span><i class="sw" style="background:var(--navy)"></i>core point (crowded)</span><span><i class="sw" style="border:2px solid var(--navy)"></i>edge point</span><span>× noise</span></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Controls</h3>
+        <label>Neighbourhood radius: <span id="dEpsOut">1.00</span>
+          <input type="range" id="dEps" min="0.3" max="2" step="0.05" value="1">
+        </label>
+        <label>Neighbours needed to count as crowded: <span id="dMinOut">4</span>
+          <input type="range" id="dMin" min="2" max="10" step="1" value="4">
+        </label>
+        <div class="row">
+          <button class="primary" id="dMode">Compare with k-means (k = 2)</button>
+          <button id="dNew">New data</button>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Result</h3>
+        <dl class="kv" id="dStats"></dl>
+        <div class="verdict" id="dStatus"></div>
+      </div>
+      <p class="lesson">k-means expects round groups, so it cuts the ring in half (slide 28). Density-based clustering follows the shape of the crowd and leaves the strays out. The price: you must choose the radius and the crowd size, and a bad choice merges everything or calls everything noise.</p>
+    </div>
+  </section>
+
+  <!-- ================= GROUPS TO PREDICTIONS ================= -->
+  <section class="sim" id="view-predict" hidden>
+    <div class="stage">
+      <h2>From groups to predictions</h2>
+      <p class="hint">Ninety factory motors, none labelled. Find the groups, ask an engineer about one motor in each group, then use the named groups to predict. Drag motor G anywhere.</p>
+      <svg class="plot" id="gPlot" viewBox="0 0 440 400" role="img" aria-label="Factory motors grouped and named"></svg>
+      <div class="legend" id="gLegend"></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Three steps</h3>
+        <div class="row">
+          <button class="primary" id="gFind">1. Find the groups</button>
+          <button id="gAsk" disabled>2. Ask the engineer</button>
+          <button id="gReset">Start again</button>
+        </div>
+        <label>3. "Fits nowhere" if G is farther than <span id="gThrOut">2.5</span> from every centre
+          <input type="range" id="gThr" min="1" max="5" step="0.1" value="2.5">
+        </label>
+      </div>
+      <div class="box">
+        <h3>Labels used</h3>
+        <dl class="kv" id="gStats"></dl>
+      </div>
+      <div class="box">
+        <h3>Prediction for motor G</h3>
+        <div class="verdict" id="gVerdict"></div>
+        <p class="note" id="gWhy"></p>
+      </div>
+      <p class="lesson">The neuron on the first tab needed a label on every training motor. Here three expert judgements name ninety motors, and anything far from every group is flagged for inspection. This is the route on slides 30 and 31, and the reason clustering matters when labels are expensive.</p>
+    </div>
+  </section>
+
+  <footer>Motor data are the illustrative values from the lecture: A (1,1), B (2,1), C (1,2) healthy; D (8,8), E (9,8), F (8,9) failed. The units tab converts the scores to illustrative real units. Larger data sets on the other tabs are generated in the page.</footer>
+</div>
+
+<script>
+(() => {
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const el = (tag, attrs = {}, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const fmt = (v, d = 2) => (Math.abs(v) < 1e-9 ? 0 : v).toFixed(d).replace("-0.00", "0.00");
+const css = name => `var(--${name})`;
+
+/* ---------- shared scatter frame (0..10 on both axes) ---------- */
+const F = { x0: 52, y0: 18, w: 370, h: 330 };
+const sx = v => F.x0 + (v / 10) * F.w;
+const sy = v => F.y0 + F.h - (v / 10) * F.h;
+const ix = px => ((px - F.x0) / F.w) * 10;
+const iy = py => ((F.y0 + F.h - py) / F.h) * 10;
+
+function frame(svg, xl, yl, fx, fy) {
+  svg.innerHTML = "";
+  el("rect", { x: F.x0, y: F.y0, width: F.w, height: F.h, fill: css("panel"), stroke: css("line") }, svg);
+  for (let v = 0; v <= 10; v += 2) {
+    el("line", { x1: sx(v), y1: F.y0, x2: sx(v), y2: F.y0 + F.h, stroke: css("grid") }, svg);
+    el("line", { x1: F.x0, y1: sy(v), x2: F.x0 + F.w, y2: sy(v), stroke: css("grid") }, svg);
+    const tx = el("text", { x: sx(v), y: F.y0 + F.h + 16, "text-anchor": "middle", "font-size": 11, fill: css("muted"), "font-family": "var(--font-mono)" }, svg); tx.textContent = fx ? fx(v) : v;
+    const ty = el("text", { x: F.x0 - 8, y: sy(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("muted"), "font-family": "var(--font-mono)" }, svg); ty.textContent = fy ? fy(v) : v;
+  }
+  const a = el("text", { x: F.x0 + F.w / 2, y: F.y0 + F.h + 34, "text-anchor": "middle", "font-size": 12, fill: css("muted") }, svg); a.textContent = xl;
+  const b = el("text", { x: 14, y: F.y0 + F.h / 2, "text-anchor": "middle", "font-size": 12, fill: css("muted"), transform: `rotate(-90 14 ${F.y0 + F.h / 2})` }, svg); b.textContent = yl;
+  const clip = el("clipPath", { id: svg.id + "Clip" }, el("defs", {}, svg));
+  el("rect", { x: F.x0, y: F.y0, width: F.w, height: F.h }, clip);
+}
+function svgPoint(svg, evt) {
+  const r = svg.getBoundingClientRect();
+  const vb = svg.viewBox.baseVal;
+  return { x: (evt.clientX - r.left) * vb.width / r.width, y: (evt.clientY - r.top) * vb.height / r.height };
+}
+function dragG(svg, onMove) {
+  let down = false;
+  const go = e => {
+    const p = svgPoint(svg, e);
+    const x = Math.min(10, Math.max(0, ix(p.x))), y = Math.min(10, Math.max(0, iy(p.y)));
+    onMove(Math.round(x * 10) / 10, Math.round(y * 10) / 10);
+  };
+  svg.addEventListener("pointerdown", e => { down = true; svg.setPointerCapture(e.pointerId); go(e); });
+  svg.addEventListener("pointermove", e => { if (down) go(e); });
+  svg.addEventListener("pointerup", () => { down = false; });
+  svg.addEventListener("pointercancel", () => { down = false; });
+}
+function drawG(svg, g, color) {
+  el("rect", { x: sx(g.x) - 8, y: sy(g.y) - 8, width: 16, height: 16, rx: 2, fill: css("panel"), stroke: color || css("ink"), "stroke-width": 2 }, svg);
+  const t = el("text", { x: sx(g.x), y: sy(g.y) + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 700, fill: css("ink") }, svg); t.textContent = "G";
+}
+function logLine(box, text, cls) {
+  const d = document.createElement("div");
+  if (cls) d.className = cls;
+  d.textContent = text;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* seeded random so the generated data sets are reproducible */
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); while (v === 0) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+const MOTORS = [
+  { n: "A", x: 1, y: 1, d: -1 }, { n: "B", x: 2, y: 1, d: -1 }, { n: "C", x: 1, y: 2, d: -1 },
+  { n: "D", x: 8, y: 8, d: 1 }, { n: "E", x: 9, y: 8, d: 1 }, { n: "F", x: 8, y: 9, d: 1 }
+];
+
+/* =====================================================================
+   1. NEURON
+   ===================================================================== */
+const XOR = [
+  { n: "off", x: 2, y: 2, d: -1 }, { n: "on", x: 8, y: 2, d: 1 },
+  { n: "on", x: 2, y: 8, d: 1 }, { n: "off", x: 8, y: 8, d: -1 }
+];
+const N = { data: MOTORS, w1: 0.2, w2: -0.4, b: -3, rate: 0.05, idx: 0, pass: 0, cur: -1, g: { x: 7, y: 7 }, updates: 0 };
+
+function nReset(keepLog) {
+  N.w1 = 0.2; N.w2 = -0.4; N.b = -3; N.idx = 0; N.pass = 0; N.cur = -1; N.updates = 0;
+  if (N.data === XOR) { N.b = -1; }
+  if (!keepLog) $("nLog").innerHTML = "";
+  logLine($("nLog"), `Start: w1 = ${fmt(N.w1)}, w2 = ${fmt(N.w2)}, b = ${fmt(N.b)}, rate = ${fmt(N.rate)}`);
+  nDraw();
+}
+const nTotal = p => N.w1 * p.x + N.w2 * p.y + N.b;
+const nOut = p => (nTotal(p) >= 0 ? 1 : -1);
+const nErrors = () => N.data.filter(p => nOut(p) !== p.d).length;
+
+function nStep(quiet) {
+  const p = N.data[N.idx];
+  const t = nTotal(p), o = t >= 0 ? 1 : -1;
+  N.cur = N.idx;
+  let msg = `${N.data === MOTORS ? "Motor " + p.n : "Switch " + p.n} (${p.x}, ${p.y}), right answer ${p.d > 0 ? "+1" : "−1"}: total = ${fmt(t)}, answers ${o > 0 ? "+1" : "−1"}.`;
+  if (o === p.d) {
+    if (!quiet) logLine($("nLog"), msg + " Right, no change.", "ok");
+  } else {
+    const k = N.rate * (p.d - o);
+    N.w1 += k * p.x; N.w2 += k * p.y; N.b += k; N.updates++;
+    if (!quiet) logLine($("nLog"), msg + ` Wrong. Nudge ${fmt(k)} × input → w1 = ${fmt(N.w1)}, w2 = ${fmt(N.w2)}, b = ${fmt(N.b)}.`, "bad");
+  }
+  N.idx = (N.idx + 1) % N.data.length;
+  if (N.idx === 0) N.pass++;
+}
+function nPass() { const start = N.idx; do { nStep(false); } while (N.idx !== start); }
+function nRun() {
+  const before = N.updates;
+  let passes = 0;
+  while (nErrors() > 0 && passes < 200) { for (let i = 0; i < N.data.length; i++) nStep(true); passes++; }
+  if (nErrors() === 0) {
+    logLine($("nLog"), `Trained: ${N.updates - before} corrections over ${passes} pass${passes === 1 ? "" : "es"}. All examples now on the right side. w1 = ${fmt(N.w1)}, w2 = ${fmt(N.w2)}, b = ${fmt(N.b)}.`, "ok");
+  } else {
+    logLine($("nLog"), `Stopped after ${passes} passes with ${nErrors()} examples still wrong. No single straight line can separate these points.`, "bad");
+  }
+  N.cur = -1;
+  nDraw();
+}
+
+/* clip the 0..10 square to the half-plane w1 x + w2 y + b >= 0 */
+function halfPlane(w1, w2, b) {
+  let poly = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  const f = ([x, y]) => w1 * x + w2 * y + b;
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const P = poly[i], Q = poly[(i + 1) % poly.length], fp = f(P), fq = f(Q);
+    if (fp >= 0) out.push(P);
+    if ((fp >= 0) !== (fq >= 0)) { const t = fp / (fp - fq); out.push([P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])]); }
+  }
+  return out;
+}
+function nDraw() {
+  const svg = $("nPlot");
+  frame(svg, N.data === MOTORS ? "temperature score" : "switch 1 (down to up)", N.data === MOTORS ? "vibration score" : "switch 2 (down to up)");
+  const g = el("g", { "clip-path": `url(#nPlotClip)` }, svg);
+  const poly = halfPlane(N.w1, N.w2, N.b);
+  if (poly.length > 2) el("polygon", { points: poly.map(([x, y]) => `${sx(x)},${sy(y)}`).join(" "), fill: css("fail-wash") }, g);
+  const segs = [];
+  const L = (x, y) => segs.push([x, y]);
+  if (Math.abs(N.w2) > 1e-9) { L(0, -(N.b) / N.w2); L(10, -(N.w1 * 10 + N.b) / N.w2); }
+  if (Math.abs(N.w1) > 1e-9) { L(-(N.b) / N.w1, 0); L(-(N.w2 * 10 + N.b) / N.w1, 10); }
+  const pts = segs.filter(([x, y]) => x >= -1e-6 && x <= 10 + 1e-6 && y >= -1e-6 && y <= 10 + 1e-6);
+  if (pts.length >= 2) {
+    pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const p1 = pts[0], p2 = pts[pts.length - 1];
+    el("line", { x1: sx(p1[0]), y1: sy(p1[1]), x2: sx(p2[0]), y2: sy(p2[1]), stroke: css("amber"), "stroke-width": 2.5 }, g);
+  }
+  N.data.forEach((p, i) => {
+    const col = p.d > 0 ? css("amber") : css("navy");
+    const wrong = nOut(p) !== p.d;
+    if (i === N.cur) el("circle", { cx: sx(p.x), cy: sy(p.y), r: 19, fill: "none", stroke: css("ink"), "stroke-dasharray": "3 3" }, svg);
+    el("circle", { cx: sx(p.x), cy: sy(p.y), r: 12, fill: col, stroke: wrong ? css("rose") : col, "stroke-width": wrong ? 3 : 1 }, svg);
+    const t = el("text", { x: sx(p.x), y: sy(p.y) + 4, "text-anchor": "middle", "font-size": N.data === MOTORS ? 11 : 9, "font-weight": 700, fill: css("panel") }, svg);
+    t.textContent = p.n;
+  });
+  if (N.data === MOTORS) drawG(svg, N.g, nOut(N.g) > 0 ? css("amber") : css("navy"));
+
+  $("nLegend").innerHTML = N.data === MOTORS
+    ? '<span><i class="sw" style="background:var(--amber)"></i>failed</span><span><i class="sw" style="background:var(--navy)"></i>healthy</span><span><i class="sw" style="border:3px solid var(--rose)"></i>currently misclassified</span><span><i class="sw sq" style="border:2px solid var(--ink)"></i>motor G</span>'
+    : '<span><i class="sw" style="background:var(--amber)"></i>light on</span><span><i class="sw" style="background:var(--navy)"></i>light off</span><span><i class="sw" style="border:3px solid var(--rose)"></i>currently misclassified</span>';
+
+  $("nWeights").innerHTML = `<dt>w1 (temperature)</dt><dd>${fmt(N.w1)}</dd><dt>w2 (vibration)</dt><dd>${fmt(N.w2)}</dd><dt>b (bias)</dt><dd>${fmt(N.b)}</dd><dt>pass / next</dt><dd>${N.pass + 1} / ${N.data === MOTORS ? "motor " + N.data[N.idx].n : "case " + (N.idx + 1)}</dd>`;
+  const e = nErrors();
+  $("nStatus").innerHTML = e === 0
+    ? `<span class="pill ok">All ${N.data.length} correct</span><span class="note">The line separates the two classes.</span>`
+    : `<span class="pill warn">${e} of ${N.data.length} wrong</span><span class="note">${N.data === XOR ? "Try training: it will never reach zero." : "Keep stepping, or train until right."}</span>`;
+  if (N.data === MOTORS) {
+    const t = nTotal(N.g);
+    $("nG").innerHTML = `G is at (${fmt(N.g.x, 1)}, ${fmt(N.g.y, 1)}). total = ${fmt(N.w1)}×${fmt(N.g.x, 1)} + ${fmt(N.w2)}×${fmt(N.g.y, 1)} ${N.b < 0 ? "−" : "+"} ${fmt(Math.abs(N.b))} = <b>${fmt(t)}</b>, so the neuron predicts <span class="pill ${t >= 0 ? "fail" : "ok"}">${t >= 0 ? "will fail" : "healthy"}</span>`;
+  } else {
+    $("nG").innerHTML = "Motor G is only used with the motor data. Here the four points are the four positions of two light switches: the light is on when exactly one switch is up.";
+  }
+}
+$("nStep").onclick = () => { nStep(false); nDraw(); };
+$("nPass").onclick = () => { nPass(); N.cur = -1; nDraw(); };
+$("nRun").onclick = nRun;
+$("nReset").onclick = () => nReset(false);
+$("nRate").oninput = e => { N.rate = +e.target.value; $("nRateOut").textContent = N.rate.toFixed(2); };
+$("nData").onchange = e => { N.data = e.target.value === "xor" ? XOR : MOTORS; nReset(false); };
+dragG($("nPlot"), (x, y) => { if (N.data !== MOTORS) return; N.g = { x, y }; nDraw(); });
+
+/* =====================================================================
+   2. K-MEANS
+   ===================================================================== */
+const KCOL = ["navy", "amber", "teal", "rose"];
+const K = { pts: [], k: 2, cents: [], assign: null, phase: "assign", round: 0, settled: false, g: { x: 7, y: 7 }, data: "motors", seed: 7 };
+
+function kMakeData() {
+  const r = rng(K.seed);
+  if (K.data === "motors") return MOTORS.map(p => ({ x: p.x, y: p.y, n: p.n }));
+  if (K.data === "factory") {
+    const groups = [[2, 2.2], [7.8, 7.6], [7.5, 2.4]], out = [];
+    groups.forEach(([cx, cy]) => { for (let i = 0; i < 30; i++) out.push({ x: clamp(cx + gauss(r) * 0.85), y: clamp(cy + gauss(r) * 0.85) }); });
+    return out;
+  }
+  const out = [];
+  for (let i = 0; i < 40; i++) { const t = r() * 8 + 1; out.push({ x: clamp(t + gauss(r) * 0.25), y: clamp(t * 0.5 + 0.5 + gauss(r) * 0.25) }); }
+  for (let i = 0; i < 40; i++) { const t = r() * 8 + 1; out.push({ x: clamp(t + gauss(r) * 0.25), y: clamp(t * 0.5 + 4.2 + gauss(r) * 0.25) }); }
+  return out;
+}
+function clamp(v) { return Math.max(0.2, Math.min(9.8, v)); }
+const d2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
+
+function kReset() {
+  K.pts = kMakeData();
+  K.k = +$("kK").value;
+  const start = $("kStart").value;
+  if (start === "bad") {
+    K.cents = K.pts.slice(0, K.k).map(p => ({ x: p.x, y: p.y }));
+  } else {
+    const r = rng(Date.now() & 0xffff), used = new Set();
+    K.cents = [];
+    while (K.cents.length < K.k) { const i = Math.floor(r() * K.pts.length); if (!used.has(i)) { used.add(i); K.cents.push({ x: K.pts[i].x, y: K.pts[i].y }); } }
+  }
+  K.assign = null; K.phase = "assign"; K.round = 0; K.settled = false;
+  $("kLog").innerHTML = "";
+  logLine($("kLog"), `Start with k = ${K.k}. Centres at ${K.cents.map(c => `(${fmt(c.x)}, ${fmt(c.y)})`).join(", ")}.`);
+  kDraw();
+}
+function kAssignStep() {
+  const prev = K.assign;
+  K.assign = K.pts.map(p => { let best = 0; K.cents.forEach((c, j) => { if (d2(p, c) < d2(p, K.cents[best])) best = j; }); return best; });
+  const changed = prev ? K.assign.filter((a, i) => a !== prev[i]).length : K.pts.length;
+  K.round++;
+  if (prev && changed === 0) {
+    K.settled = true;
+    logLine($("kLog"), `Round ${K.round}, assign: nothing changes, so k-means stops.`, "ok");
+  } else {
+    let detail = "";
+    if (K.data === "motors") detail = " Groups: " + K.cents.map((_, j) => "{" + K.pts.filter((p, i) => K.assign[i] === j).map(p => p.n).join(", ") + "}").join(" ");
+    logLine($("kLog"), `Round ${K.round}, assign: ${changed} motor${changed === 1 ? "" : "s"} ${prev ? "changed group" : "assigned"}.${detail}`);
+  }
+  K.phase = "move";
+}
+function kMoveStep() {
+  K.cents = K.cents.map((c, j) => {
+    const mem = K.pts.filter((p, i) => K.assign[i] === j);
+    if (!mem.length) return c;
+    return { x: mem.reduce((s, p) => s + p.x, 0) / mem.length, y: mem.reduce((s, p) => s + p.y, 0) / mem.length };
+  });
+  logLine($("kLog"), `Round ${K.round}, move: centres to ${K.cents.map(c => `(${fmt(c.x)}, ${fmt(c.y)})`).join(", ")}.`);
+  K.phase = "assign";
+}
+function kNext() { if (K.settled) return; if (K.phase === "assign") kAssignStep(); else kMoveStep(); kDraw(); }
+function kRound() { if (K.settled) return; if (K.phase === "move") kMoveStep(); kAssignStep(); if (!K.settled) kMoveStep(); kDraw(); }
+function kRun() { let guard = 0; while (!K.settled && guard++ < 100) { if (K.phase === "move") kMoveStep(); kAssignStep(); if (!K.settled) kMoveStep(); } kDraw(); }
+function kInertia() { if (!K.assign) return null; return K.pts.reduce((s, p, i) => s + d2(p, K.cents[K.assign[i]]), 0); }
+
+function kDraw() {
+  const svg = $("kPlot");
+  frame(svg, "temperature score", "vibration score");
+  const big = K.pts.length > 10;
+  K.pts.forEach((p, i) => {
+    const col = K.assign ? css(KCOL[K.assign[i]]) : css("muted");
+    el("circle", { cx: sx(p.x), cy: sy(p.y), r: big ? 5 : 12, fill: col, "fill-opacity": K.assign ? 1 : 0.55 }, svg);
+    if (!big) { const t = el("text", { x: sx(p.x), y: sy(p.y) + 4, "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: css("panel") }, svg); t.textContent = p.n; }
+  });
+  K.cents.forEach((c, j) => {
+    el("rect", { x: sx(c.x) - 8, y: sy(c.y) - 8, width: 16, height: 16, rx: 2, fill: css("panel"), stroke: css(KCOL[j]), "stroke-width": 3.5 }, svg);
+  });
+  // motor G joins its nearest centre
+  let gi = 0; K.cents.forEach((c, j) => { if (d2(K.g, c) < d2(K.g, K.cents[gi])) gi = j; });
+  el("line", { x1: sx(K.g.x), y1: sy(K.g.y), x2: sx(K.cents[gi].x), y2: sy(K.cents[gi].y), stroke: css(KCOL[gi]), "stroke-dasharray": "4 4", "stroke-width": 1.5 }, svg);
+  drawG(svg, K.g, css(KCOL[gi]));
+
+  $("kLegend").innerHTML = K.cents.map((_, j) => `<span><i class="sw sq" style="border:3px solid var(--${KCOL[j]})"></i>centre ${j + 1}</span>`).join("") + '<span><i class="sw" style="background:var(--muted);opacity:.55"></i>not yet assigned</span>';
+  const inr = kInertia();
+  $("kStats").innerHTML = `<dt>round</dt><dd>${K.round}</dd><dt>next step</dt><dd>${K.settled ? "done" : K.phase === "assign" ? "assign" : "move"}</dd><dt>tightness</dt><dd>${inr === null ? "not yet measured" : fmt(inr) + " (total squared distance to centres)"}</dd>`;
+  $("kNext").textContent = K.settled ? "Settled" : K.phase === "assign" ? "Assign" : "Move centres";
+  ["kNext", "kRound", "kRun"].forEach(id => { $(id).disabled = K.settled; });
+  let status = "";
+  if (K.settled) {
+    status = `<span class="pill ok">Settled after ${K.round} rounds</span>`;
+    if (K.data === "long" && K.k === 2) status += `<span class="note">Look at the split: k-means cuts long groups across the middle, because every point simply joins its nearest centre.</span>`;
+    else if (K.data === "motors" && K.k > 2) status += `<span class="note">You asked for ${K.k} groups, so you got ${K.k}, even though the data really have two.</span>`;
+    else status += `<span class="note">Press Start again with random starting centres to see whether the result changes.</span>`;
+  } else status = `<span class="pill fail">Still moving</span><span class="note">Step through assign and move, or run until settled.</span>`;
+  $("kStatus").innerHTML = status;
+  kElbow();
+  const ds = K.cents.map((c, j) => `centre ${j + 1}: ${fmt(Math.sqrt(d2(K.g, c)))}`).join(" · ");
+  $("kG").innerHTML = `G is at (${fmt(K.g.x, 1)}, ${fmt(K.g.y, 1)}). Distances, ${ds}. G joins <b style="color:var(--${KCOL[gi]})">centre ${gi + 1}</b>. Clustering cannot name that group: an engineer has to inspect it once and decide what it means.`;
+}
+$("kNext").onclick = kNext;
+$("kRound").onclick = kRound;
+$("kRun").onclick = kRun;
+$("kReset").onclick = kReset;
+$("kData").onchange = () => { K.data = $("kData").value; if (K.data !== "motors") K.seed = (K.seed * 31 + 11) % 997; $("kK").value = K.data === "factory" ? "3" : "2"; kReset(); };
+$("kK").onchange = kReset;
+$("kStart").onchange = kReset;
+dragG($("kPlot"), (x, y) => { K.g = { x, y }; kDraw(); });
+
+/* =====================================================================
+   3. OVERFITTING
+   ===================================================================== */
+const O = { deg: 3, n: 10, seed: 9, train: [], test: [] };
+const truth = x => 1.5 + 0.4 * x + 1.5 * Math.sin(0.75 * x);
+function oSample() {
+  const r = rng(O.seed);
+  // training ages spread evenly over the range (with jitter), so the test is about memorising, not extrapolating
+  O.train = Array.from({ length: O.n }, (_, i) => { const x = 0.3 + ((i + 0.15 + 0.7 * r()) / O.n) * 9.4; return { x, y: truth(x) + gauss(r) * 0.8 }; });
+  O.test = Array.from({ length: 40 }, () => { const x = 0.3 + r() * 9.4; return { x, y: truth(x) + gauss(r) * 0.8 }; });
+}
+const zs = x => (x - 5) / 5; // scale to [-1, 1] for a stable fit
+function fitPoly(pts, deg) {
+  const m = deg + 1, A = Array.from({ length: m }, () => new Array(m + 1).fill(0));
+  pts.forEach(p => {
+    const z = zs(p.x), pw = [1]; for (let k = 1; k < 2 * m; k++) pw.push(pw[k - 1] * z);
+    for (let i = 0; i < m; i++) { for (let j = 0; j < m; j++) A[i][j] += pw[i + j]; A[i][m] += pw[i] * p.y; }
+  });
+  for (let i = 0; i < m; i++) A[i][i] += 1e-7;
+  for (let c = 0; c < m; c++) {
+    let piv = c; for (let r = c + 1; r < m; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+    [A[c], A[piv]] = [A[piv], A[c]];
+    const d = A[c][c] || 1e-12;
+    for (let j = c; j <= m; j++) A[c][j] /= d;
+    for (let r = 0; r < m; r++) if (r !== c) { const f = A[r][c]; for (let j = c; j <= m; j++) A[r][j] -= f * A[c][j]; }
+  }
+  const coef = A.map(row => row[m]);
+  return x => { const z = zs(x); let s = 0, p = 1; for (const c of coef) { s += c * p; p *= z; } return s; };
+}
+const mse = (f, pts) => pts.reduce((s, p) => s + (f(p.x) - p.y) ** 2, 0) / pts.length;
+function oAllErrors() {
+  const out = [];
+  for (let d = 1; d <= 10; d++) { const f = fitPoly(O.train, Math.min(d, O.train.length - 1)); out.push({ d, tr: mse(f, O.train), te: mse(f, O.test) }); }
+  return out;
+}
+function oDraw() {
+  const svg = $("oPlot");
+  const Y = v => v;
+  frame(svg, "age (years)", "vibration score");
+  const g = el("g", { "clip-path": "url(#oPlotClip)" }, svg);
+  const path = f => { let d = ""; for (let i = 0; i <= 200; i++) { const x = i / 20; d += (i ? "L" : "M") + sx(x).toFixed(1) + "," + sy(Y(f(x))).toFixed(1); } return d; };
+  el("path", { d: path(truth), fill: "none", stroke: css("muted"), "stroke-width": 1.5, "stroke-dasharray": "5 5" }, g);
+  const deg = Math.min(O.deg, O.train.length - 1);
+  const f = fitPoly(O.train, deg);
+  el("path", { d: path(f), fill: "none", stroke: css("amber"), "stroke-width": 2.5 }, g);
+  O.test.forEach(p => el("circle", { cx: sx(p.x), cy: sy(Y(p.y)), r: 4.5, fill: css("panel"), stroke: css("teal"), "stroke-width": 1.6 }, g));
+  O.train.forEach(p => el("circle", { cx: sx(p.x), cy: sy(Y(p.y)), r: 5.5, fill: css("navy") }, g));
+  $("oLegend").innerHTML = '<span><i class="sw" style="background:var(--navy)"></i>training motors</span><span><i class="sw" style="border:2px solid var(--teal)"></i>test motors</span><span><i class="sw" style="background:var(--amber);border-radius:2px;height:3px;width:16px"></i>fitted model</span><span><i class="sw" style="border-top:2px dashed var(--muted);border-radius:0;height:0;width:16px"></i>true pattern</span>';
+
+  const all = oAllErrors(), cur = all[O.deg - 1];
+  const best = all.reduce((a, b) => (b.te < a.te ? b : a));
+  const cap0 = Math.max(best.te * 4, Math.max(...all.map(a => a.tr)) * 1.2, 1);
+  $("oStats").innerHTML = `<dt>degree</dt><dd>${O.deg}${deg < O.deg ? " (limited by the number of points)" : ""}</dd><dt>training error</dt><dd>${fmt(cur.tr, 3)}</dd><dt>test error</dt><dd>${cur.te > cap0 ? "above " + fmt(cap0, 1) + " (off the chart)" : fmt(cur.te, 3)}</dd><dt>best test degree</dt><dd>${best.d} (test error ${fmt(best.te, 3)})</dd>`;
+  let pill, note;
+  if (cur.tr < 0.05 && O.deg >= O.train.length - 1) { pill = '<span class="pill warn">Memorised</span>'; note = "The curve passes through every training point, and the test error shows the price."; }
+  else if (O.deg === 1 && cur.te > best.te * 1.3) { pill = '<span class="pill fail">Too simple</span>'; note = "A straight line misses the bend in the pattern, on training and test data alike."; }
+  else if (cur.te <= best.te * 1.15) { pill = '<span class="pill ok">Generalises well</span>'; note = "Close to the lowest test error. This is the setting a validation set would pick."; }
+  else if (O.deg > best.d) { pill = '<span class="pill warn">Overfitting</span>'; note = "Training error is lower than at the best setting, but test error is higher: it is fitting the noise."; }
+  else { pill = '<span class="pill fail">Underfitting</span>'; note = "The model is not yet flexible enough to follow the pattern."; }
+  $("oStatus").innerHTML = pill + `<span class="note">${note}</span>`;
+
+  // error chart
+  const es = $("oErr"); es.innerHTML = "";
+  const E = { x0: 46, y0: 12, w: 360, h: 150 };
+  const cap = Math.max(best.te * 4, Math.max(...all.map(a => a.tr)) * 1.2, 1);
+  const ex = d => E.x0 + ((d - 1) / 9) * E.w, ey = v => E.y0 + E.h - (Math.min(v, cap) / cap) * E.h;
+  el("rect", { x: E.x0, y: E.y0, width: E.w, height: E.h, fill: css("panel"), stroke: css("line") }, es);
+  for (let i = 0; i <= 4; i++) {
+    const v = (cap / 4) * i, y = ey(v);
+    el("line", { x1: E.x0, y1: y, x2: E.x0 + E.w, y2: y, stroke: css("grid") }, es);
+    const t = el("text", { x: E.x0 - 6, y: y + 4, "text-anchor": "end", "font-size": 10, fill: css("muted"), "font-family": "var(--font-mono)" }, es); t.textContent = v.toFixed(1);
+  }
+  for (let d = 1; d <= 10; d++) { const t = el("text", { x: ex(d), y: E.y0 + E.h + 14, "text-anchor": "middle", "font-size": 10, fill: css("muted"), "font-family": "var(--font-mono)" }, es); t.textContent = d; }
+  const lab = el("text", { x: E.x0 + E.w / 2, y: E.y0 + E.h + 30, "text-anchor": "middle", "font-size": 11, fill: css("muted") }, es); lab.textContent = "polynomial degree";
+  el("line", { x1: ex(O.deg), y1: E.y0, x2: ex(O.deg), y2: E.y0 + E.h, stroke: css("ink"), "stroke-dasharray": "3 3" }, es);
+  const line = (key, col) => {
+    el("polyline", { points: all.map(a => `${ex(a.d)},${ey(a[key])}`).join(" "), fill: "none", stroke: css(col), "stroke-width": 2 }, es);
+    all.forEach(a => {
+      if (a[key] > cap) { const x = ex(a.d), y = E.y0; el("polygon", { points: `${x - 5},${y + 8} ${x + 5},${y + 8} ${x},${y}`, fill: css(col) }, es); }
+      else el("circle", { cx: ex(a.d), cy: ey(a[key]), r: a.d === O.deg ? 4.5 : 2.5, fill: css(col) }, es);
+    });
+  };
+  line("tr", "navy"); line("te", "amber");
+}
+$("oDeg").oninput = e => { O.deg = +e.target.value; $("oDegOut").textContent = O.deg; oDraw(); };
+$("oN").onchange = e => { O.n = +e.target.value; oSample(); oDraw(); };
+$("oNew").onclick = () => { O.seed = (O.seed * 17 + 5) % 1009; oSample(); oDraw(); };
+$("oBest").onclick = () => { const b = oAllErrors().reduce((a, c) => (c.te < a.te ? c : a)); O.deg = b.d; $("oDeg").value = b.d; $("oDegOut").textContent = b.d; oDraw(); };
+
+/* =====================================================================
+   PREPARATION: units, scaling and k nearest neighbours
+   ===================================================================== */
+const P = { q: { x: 4, y: 8.75 }, noise: false, scale: "raw", k: 3 };
+const tC = s => 20 + 7 * s, vM = s => 0.1 + 0.08 * s; // score -> real units
+function pData() {
+  const d = MOTORS.map(m => ({ n: m.n, t: tC(m.x), v: vM(m.y), sx: m.x, sy: m.y, fail: m.d > 0 }));
+  if (P.noise) d.push({ n: "X", t: tC(2), v: 97, sx: 2, sy: 10, fail: false, bad: true });
+  return d;
+}
+function pDist(data, q) {
+  if (P.scale === "raw") return data.map(m => Math.hypot(m.t - q.t, m.v - q.v));
+  const ts = data.map(m => m.t), vs = data.map(m => m.v);
+  const tmin = Math.min(...ts), tmax = Math.max(...ts), vmin = Math.min(...vs), vmax = Math.max(...vs);
+  const st = t => 1 + 9 * (t - tmin) / (tmax - tmin), sv = v => 1 + 9 * (v - vmin) / (vmax - vmin);
+  return data.map(m => Math.hypot(st(m.t) - st(q.t), sv(m.v) - sv(q.v)));
+}
+function pDraw() {
+  const svg = $("pPlot");
+  frame(svg, "temperature (°C)", "vibration (mm/s)", v => Math.round(tC(v)), v => vM(v).toFixed(2));
+  const data = pData(), q = { t: tC(P.q.x), v: vM(P.q.y) };
+  const dist = pDist(data, q);
+  const order = data.map((m, i) => i).sort((a, b) => dist[a] - dist[b]);
+  const voters = order.slice(0, P.k);
+  voters.forEach(i => el("line", { x1: sx(P.q.x), y1: sy(P.q.y), x2: sx(data[i].sx), y2: sy(Math.min(data[i].sy, 10)), stroke: css("ink"), "stroke-width": 1.5, "stroke-dasharray": "4 3" }, svg));
+  data.forEach(m => {
+    const col = m.bad ? css("rose") : m.fail ? css("amber") : css("navy");
+    el("circle", { cx: sx(m.sx), cy: sy(Math.min(m.sy, 10)), r: 12, fill: col }, svg);
+    const t = el("text", { x: sx(m.sx), y: sy(Math.min(m.sy, 10)) + 4, "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: css("panel") }, svg); t.textContent = m.n;
+    if (m.bad) { const l = el("text", { x: sx(m.sx) + 18, y: sy(10) + 16, "font-size": 11, fill: css("rose") }, svg); l.textContent = "X reports 97 mm/s (far off the chart)"; }
+  });
+  el("rect", { x: sx(P.q.x) - 8, y: sy(P.q.y) - 8, width: 16, height: 16, rx: 2, fill: css("panel"), stroke: css("ink"), "stroke-width": 2 }, svg);
+  const tq = el("text", { x: sx(P.q.x), y: sy(P.q.y) + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 700, fill: css("ink") }, svg); tq.textContent = "Q";
+  const votesFail = voters.filter(i => data[i].fail).length;
+  const fail = votesFail * 2 > P.k;
+  $("pVerdict").innerHTML = `<span class="pill ${fail ? "fail" : "ok"}">${fail ? "Q will fail" : "Q is healthy"}</span><span class="note">${votesFail} of ${P.k} nearest neighbour${P.k > 1 ? "s" : ""} failed.</span>`;
+  $("pWhy").innerHTML = `Q is at ${q.t.toFixed(0)} °C and ${q.v.toFixed(2)} mm/s. ` + (P.scale === "raw"
+    ? "Distances use raw units, so one degree counts as much as one whole millimetre per second. Temperature decides almost everything."
+    : P.noise ? "Both features are rescaled using their smallest and largest values. The faulty 97 mm/s reading stretches the vibration range, squeezing every real vibration value close to 1." : "Both features are rescaled to 1 to 10 before measuring distance, so each counts fairly.");
+  $("pTable").innerHTML = "<tr><th>Motor</th><th>°C</th><th>mm/s</th><th>Distance</th><th>Outcome</th></tr>" + order.map((i, r) => {
+    const m = data[i];
+    return `<tr${r < P.k ? ' class="hl"' : ""}><td>${m.n}</td><td>${m.t.toFixed(0)}</td><td>${m.v.toFixed(2)}</td><td>${dist[i].toFixed(2)}</td><td>${m.fail ? "failed" : "healthy"}</td></tr>`;
+  }).join("");
+}
+$("pScale").onchange = e => { P.scale = e.target.value; pDraw(); };
+$("pK").onchange = e => { P.k = +e.target.value; pDraw(); };
+$("pNoise").onchange = e => { P.noise = e.target.checked; pDraw(); };
+dragG($("pPlot"), (x, y) => { P.q = { x, y }; pDraw(); });
+
+/* =====================================================================
+   HIDDEN LAYER: the slide 17 network, then backpropagation from scratch
+   ===================================================================== */
+const sig = z => 1 / (1 + Math.exp(-z));
+const H = { s1: 0, s2: 0 };
+const XOR4 = [[0, 0, 0], [1, 0, 1], [0, 1, 1], [1, 1, 0]];
+const luger = (a, b) => { const h = sig(-7 * a - 7 * b + 2.6); return { h, o: sig(-5 * a - 4 * b - 11 * h + 7) }; };
+function hDraw() {
+  const svg = $("hNet"); svg.innerHTML = "";
+  const S1 = [70, 80], S2 = [70, 220], Hn = [230, 150], O = [370, 150];
+  const r = luger(H.s1, H.s2);
+  const edge = (a, b, w, lx, ly) => {
+    const sw = Math.min(6, 1 + Math.abs(w) / 2.5);
+    el("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: w < 0 ? css("rose") : css("teal"), "stroke-width": sw, "stroke-opacity": 0.75 }, svg);
+    const t = el("text", { x: lx, y: ly, "text-anchor": "middle", "font-size": 12, "font-family": "var(--font-mono)", fill: css("ink") }, svg); t.textContent = w;
+  };
+  edge(S1, Hn, -7, 150, 105); edge(S2, Hn, -7, 150, 205);
+  edge(Hn, O, -11, 300, 140);
+  el("path", { d: `M${S1[0]},${S1[1]} Q 220 20 ${O[0]},${O[1]}`, fill: "none", stroke: css("rose"), "stroke-width": 2.6, "stroke-opacity": 0.75 }, svg);
+  el("path", { d: `M${S2[0]},${S2[1]} Q 220 280 ${O[0]},${O[1]}`, fill: "none", stroke: css("rose"), "stroke-width": 2.2, "stroke-opacity": 0.75 }, svg);
+  const t1 = el("text", { x: 230, y: 42, "text-anchor": "middle", "font-size": 12, "font-family": "var(--font-mono)", fill: css("ink") }, svg); t1.textContent = "-5";
+  const t2 = el("text", { x: 230, y: 270, "text-anchor": "middle", "font-size": 12, "font-family": "var(--font-mono)", fill: css("ink") }, svg); t2.textContent = "-4";
+  const node = (p, label, val, col, rr) => {
+    el("circle", { cx: p[0], cy: p[1], r: rr, fill: css("panel"), stroke: col, "stroke-width": 3 }, svg);
+    el("circle", { cx: p[0], cy: p[1], r: rr - 5, fill: col, "fill-opacity": 0.12 + 0.75 * val }, svg);
+    const a = el("text", { x: p[0], y: p[1] - 2, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: css("ink") }, svg); a.textContent = label;
+    const b = el("text", { x: p[0], y: p[1] + 15, "text-anchor": "middle", "font-size": 12, "font-family": "var(--font-mono)", fill: css("ink") }, svg); b.textContent = val.toFixed(2);
+  };
+  node(S1, "S1", H.s1, css("navy"), 30); node(S2, "S2", H.s2, css("navy"), 30);
+  node(Hn, "H", r.h, css("amber"), 32); node(O, "out", r.o, css("navy"), 34);
+  const b1 = el("text", { x: 230, y: 196, "text-anchor": "middle", "font-size": 11, fill: css("muted") }, svg); b1.textContent = "bias +2.6";
+  const b2 = el("text", { x: 370, y: 202, "text-anchor": "middle", "font-size": 11, fill: css("muted") }, svg); b2.textContent = "bias +7";
+  const on = r.o > 0.5;
+  el("circle", { cx: 420, cy: 150, r: 9, fill: on ? css("amber") : css("grid"), stroke: css("muted") }, svg);
+  $("hS1").textContent = `Switch 1: ${H.s1 ? "up" : "down"}`;
+  $("hS2").textContent = `Switch 2: ${H.s2 ? "up" : "down"}`;
+  $("hTable").innerHTML = "<tr><th>S1</th><th>S2</th><th>H</th><th>out</th><th>light</th></tr>" + XOR4.map(([a, b, y]) => {
+    const v = luger(a, b);
+    return `<tr${a === H.s1 && b === H.s2 ? ' class="hl"' : ""}><td>${a}</td><td>${b}</td><td>${v.h.toFixed(2)}</td><td>${v.o.toFixed(2)}</td><td>${v.o > 0.5 ? "on" : "off"}</td></tr>`;
+  }).join("");
+}
+$("hS1").onclick = () => { H.s1 = 1 - H.s1; hDraw(); };
+$("hS2").onclick = () => { H.s2 = 1 - H.s2; hDraw(); };
+
+const NET = { seed: 11, lr: 0.5, w: null, epochs: 0, hist: [] };
+function netInit() {
+  const r = rng(NET.seed);
+  const u = () => r() * 2 - 1;
+  NET.w = { h: [[u(), u(), u()], [u(), u(), u()]], o: [u(), u(), u()] }; // [w1, w2, bias]
+  NET.epochs = 0; NET.hist = [];
+  NET.hist.push(netErr());
+}
+function netFwd(a, b) {
+  const h = NET.w.h.map(w => sig(w[0] * a + w[1] * b + w[2]));
+  return { h, o: sig(NET.w.o[0] * h[0] + NET.w.o[1] * h[1] + NET.w.o[2]) };
+}
+function netErr() { return XOR4.reduce((s, [a, b, y]) => s + (netFwd(a, b).o - y) ** 2, 0) / 4; }
+function netTrain(n) {
+  for (let e = 0; e < n; e++) {
+    for (const [a, b, y] of XOR4) {
+      const f = netFwd(a, b);
+      const dO = (f.o - y) * f.o * (1 - f.o);
+      const dH = f.h.map((h, j) => dO * NET.w.o[j] * h * (1 - h));
+      NET.w.o[0] -= NET.lr * dO * f.h[0]; NET.w.o[1] -= NET.lr * dO * f.h[1]; NET.w.o[2] -= NET.lr * dO;
+      NET.w.h.forEach((w, j) => { w[0] -= NET.lr * dH[j] * a; w[1] -= NET.lr * dH[j] * b; w[2] -= NET.lr * dH[j]; });
+    }
+    NET.epochs++;
+    if (NET.epochs % 25 === 0) NET.hist.push(netErr());
+  }
+  netDraw();
+}
+function netDraw() {
+  const svg = $("hMap"); svg.innerHTML = "";
+  const M = { x: 30, y: 12, s: 170 }, G = 20, cs = M.s / G;
+  el("rect", { x: M.x, y: M.y, width: M.s, height: M.s, fill: css("navy"), "fill-opacity": 0.85 }, svg);
+  for (let i = 0; i < G; i++) for (let j = 0; j < G; j++) {
+    const a = (i + 0.5) / G, b = (j + 0.5) / G;
+    el("rect", { x: M.x + i * cs, y: M.y + M.s - (j + 1) * cs, width: cs + 0.3, height: cs + 0.3, fill: css("amber"), "fill-opacity": netFwd(a, b).o.toFixed(3) }, svg);
+  }
+  XOR4.forEach(([a, b, y]) => el("circle", { cx: M.x + a * M.s, cy: M.y + M.s - b * M.s, r: 7, fill: y ? css("amber") : css("navy"), stroke: css("panel"), "stroke-width": 2 }, svg));
+  const lx = el("text", { x: M.x + M.s / 2, y: M.y + M.s + 16, "text-anchor": "middle", "font-size": 11, fill: css("muted") }, svg); lx.textContent = "switch 1 (down to up)";
+  const ly = el("text", { x: 12, y: M.y + M.s / 2, "text-anchor": "middle", "font-size": 11, fill: css("muted"), transform: `rotate(-90 12 ${M.y + M.s / 2})` }, svg); ly.textContent = "switch 2";
+  // error curve
+  const E = { x: 238, y: 12, w: 170, h: 170 };
+  el("rect", { x: E.x, y: E.y, width: E.w, height: E.h, fill: css("panel"), stroke: css("line") }, svg);
+  const top = Math.max(0.3, ...NET.hist), n = NET.hist.length;
+  const px = i => E.x + (n > 1 ? (i / (n - 1)) * E.w : 0), py = v => E.y + E.h - (v / top) * E.h;
+  el("polyline", { points: NET.hist.map((v, i) => `${px(i)},${py(v)}`).join(" "), fill: "none", stroke: css("amber"), "stroke-width": 2 }, svg);
+  const l1 = el("text", { x: E.x + E.w / 2, y: E.y + E.h + 16, "text-anchor": "middle", "font-size": 11, fill: css("muted") }, svg); l1.textContent = `error over ${NET.epochs.toLocaleString()} passes`;
+  const l2 = el("text", { x: E.x + 6, y: E.y + 14, "font-size": 11, "font-family": "var(--font-mono)", fill: css("muted") }, svg); l2.textContent = "error " + netErr().toFixed(3);
+  const outs = XOR4.map(([a, b]) => netFwd(a, b).o);
+  const solved = XOR4.every(([a, b, y], i) => (outs[i] > 0.5) === (y === 1));
+  const stuck = !solved && NET.epochs >= 20000;
+  $("hStatus").innerHTML = (solved ? '<span class="pill ok">Solved</span>' : stuck ? '<span class="pill warn">Stuck</span>' : '<span class="pill fail">Still learning</span>') +
+    `<span class="note">Outputs for (0,0), (1,0), (0,1), (1,1): ${outs.map(o => o.toFixed(2)).join(", ")}. ${solved ? "The amber region now covers exactly the two 'on' corners." : stuck ? "Backpropagation can settle in a poor solution. Press New random start." : "Keep training and watch the error fall."}</span>`;
+}
+$("hTrain").onclick = () => netTrain(500);
+$("hTrain5").onclick = () => netTrain(5000);
+$("hNew").onclick = () => { NET.seed = (NET.seed * 13 + 7) % 10007; netInit(); netDraw(); };
+$("hRate").oninput = e => { NET.lr = +e.target.value; $("hRateOut").textContent = NET.lr.toFixed(1); };
+
+/* =====================================================================
+   K-MEANS: the elbow chart
+   ===================================================================== */
+function kmeansRun(pts, k, r) {
+  let c = []; const used = new Set();
+  while (c.length < k) { const i = Math.floor(r() * pts.length); if (!used.has(i)) { used.add(i); c.push({ x: pts[i].x, y: pts[i].y }); } }
+  let a = null;
+  for (let it = 0; it < 100; it++) {
+    const na = pts.map(p => { let b = 0; c.forEach((q, j) => { if (d2(p, q) < d2(p, c[b])) b = j; }); return b; });
+    if (a && na.every((v, i) => v === a[i])) break;
+    a = na;
+    c = c.map((q, j) => { const m = pts.filter((p, i) => a[i] === j); return m.length ? { x: m.reduce((s, p) => s + p.x, 0) / m.length, y: m.reduce((s, p) => s + p.y, 0) / m.length } : q; });
+  }
+  return { c, a, inertia: pts.reduce((s, p, i) => s + d2(p, c[a[i]]), 0) };
+}
+function kElbow() {
+  const svg = $("kElbow"); svg.innerHTML = "";
+  const maxK = Math.min(6, K.pts.length);
+  const r = rng(99), vals = [];
+  for (let k = 1; k <= maxK; k++) { let best = Infinity; for (let t = 0; t < 12; t++) best = Math.min(best, kmeansRun(K.pts, k, r).inertia); vals.push(best); }
+  const E = { x0: 46, y0: 12, w: 350, h: 130 }, top = vals[0] || 1;
+  const ex = k => E.x0 + ((k - 1) / Math.max(1, maxK - 1)) * E.w, ey = v => E.y0 + E.h - (v / top) * E.h;
+  el("rect", { x: E.x0, y: E.y0, width: E.w, height: E.h, fill: css("panel"), stroke: css("line") }, svg);
+  for (let i = 0; i <= 4; i++) { const v = top * i / 4; el("line", { x1: E.x0, y1: ey(v), x2: E.x0 + E.w, y2: ey(v), stroke: css("grid") }, svg); const t = el("text", { x: E.x0 - 6, y: ey(v) + 4, "text-anchor": "end", "font-size": 10, fill: css("muted"), "font-family": "var(--font-mono)" }, svg); t.textContent = v >= 100 ? v.toFixed(0) : v.toFixed(1); }
+  vals.forEach((v, i) => { const t = el("text", { x: ex(i + 1), y: E.y0 + E.h + 14, "text-anchor": "middle", "font-size": 10, fill: css("muted"), "font-family": "var(--font-mono)" }, svg); t.textContent = i + 1; });
+  const lab = el("text", { x: E.x0 + E.w / 2, y: E.y0 + E.h + 30, "text-anchor": "middle", "font-size": 11, fill: css("muted") }, svg); lab.textContent = "number of groups k";
+  el("polyline", { points: vals.map((v, i) => `${ex(i + 1)},${ey(v)}`).join(" "), fill: "none", stroke: css("navy"), "stroke-width": 2 }, svg);
+  vals.forEach((v, i) => el("circle", { cx: ex(i + 1), cy: ey(v), r: i + 1 === K.k ? 5 : 3, fill: i + 1 === K.k ? css("amber") : css("navy") }, svg));
+}
+
+/* =====================================================================
+   HIERARCHICAL CLUSTERING
+   ===================================================================== */
+const HPTS = MOTORS.map(m => ({ n: m.n, x: m.x, y: m.y })).concat([{ n: "G", x: 7, y: 7 }, { n: "H", x: 4.5, y: 4.5 }]);
+const PAL = ["navy", "amber", "teal", "rose", "violet", "olive"];
+const HC = { link: "single", merges: [], shown: 0, cut: 2 };
+function hcCompute() {
+  let groups = HPTS.map((p, i) => ({ id: i, m: [i] }));
+  const dd = (a, b) => Math.sqrt(d2(HPTS[a], HPTS[b]));
+  const link = (A, B) => {
+    const ds = []; A.m.forEach(i => B.m.forEach(j => ds.push(dd(i, j))));
+    return HC.link === "single" ? Math.min(...ds) : HC.link === "complete" ? Math.max(...ds) : ds.reduce((s, v) => s + v, 0) / ds.length;
+  };
+  HC.merges = []; let next = HPTS.length;
+  while (groups.length > 1) {
+    let best = null;
+    for (let i = 0; i < groups.length; i++) for (let j = i + 1; j < groups.length; j++) { const d = link(groups[i], groups[j]); if (!best || d < best.d - 1e-9) best = { i, j, d }; }
+    const A = groups[best.i], B = groups[best.j], C = { id: next++, m: A.m.concat(B.m), a: A, b: B, d: best.d };
+    HC.merges.push(C);
+    groups = groups.filter((g, k) => k !== best.i && k !== best.j).concat([C]);
+  }
+}
+const hcName = g => g.m.map(i => HPTS[i].n).sort().join("");
+function hcGroupsAfter(nMerges) {
+  let groups = HPTS.map((p, i) => ({ id: i, m: [i] }));
+  for (let s = 0; s < nMerges; s++) { const C = HC.merges[s]; groups = groups.filter(g => g.id !== C.a.id && g.id !== C.b.id).concat([C]); }
+  return groups;
+}
+function hcDraw() {
+  const nPts = HPTS.length;
+  const after = Math.max(HC.shown, 0);
+  const cutMerges = Math.min(nPts - HC.cut, HC.shown);
+  const groups = hcGroupsAfter(cutMerges);
+  const colOf = new Array(nPts).fill(null); let ci = 0;
+  groups.forEach(g => { const c = g.m.length > 1 ? PAL[ci++ % PAL.length] : null; g.m.forEach(i => { colOf[i] = c; }); });
+  const svg = $("hcPlot");
+  frame(svg, "temperature score", "vibration score");
+  // draw merge links as hulls: connect each merged pair's centroids
+  for (let s = 0; s < after; s++) {
+    const C = HC.merges[s];
+    const cen = g => ({ x: g.m.reduce((t, i) => t + HPTS[i].x, 0) / g.m.length, y: g.m.reduce((t, i) => t + HPTS[i].y, 0) / g.m.length });
+    const p = cen(C.a), q = cen(C.b);
+    el("line", { x1: sx(p.x), y1: sy(p.y), x2: sx(q.x), y2: sy(q.y), stroke: css("muted"), "stroke-width": 1.5, "stroke-dasharray": s === after - 1 ? "0" : "3 3" }, svg);
+  }
+  HPTS.forEach((p, i) => {
+    el("circle", { cx: sx(p.x), cy: sy(p.y), r: 12, fill: colOf[i] ? css(colOf[i]) : css("panel"), stroke: colOf[i] ? css(colOf[i]) : css("muted"), "stroke-width": 2 }, svg);
+    const t = el("text", { x: sx(p.x), y: sy(p.y) + 4, "text-anchor": "middle", "font-size": 11, "font-weight": 700, fill: colOf[i] ? css("panel") : css("ink") }, svg); t.textContent = p.n;
+  });
+  // dendrogram
+  const T = $("hcTree"); T.innerHTML = "";
+  const root = HC.merges[HC.merges.length - 1];
+  const order = []; (function walk(g) { if (g.a) { walk(g.a); walk(g.b); } else order.push(g.m[0]); })(root);
+  const D = { x0: 40, y0: 12, w: 360, h: 180 }, maxD = root.d;
+  const lx = i => D.x0 + (order.indexOf(i) + 0.5) * (D.w / nPts), ly = h => D.y0 + D.h - (h / maxD) * D.h;
+  const pos = {}; HPTS.forEach((p, i) => { pos[i] = { x: lx(i), y: D.y0 + D.h }; });
+  for (let i = 0; i <= 4; i++) { const v = maxD * i / 4; el("line", { x1: D.x0, y1: ly(v), x2: D.x0 + D.w, y2: ly(v), stroke: css("grid") }, T); const t = el("text", { x: D.x0 - 6, y: ly(v) + 4, "text-anchor": "end", "font-size": 10, "font-family": "var(--font-mono)", fill: css("muted") }, T); t.textContent = v.toFixed(1); }
+  HC.merges.forEach((C, s) => {
+    const A = pos[C.a.id], B = pos[C.b.id], y = ly(C.d);
+    pos[C.id] = { x: (A.x + B.x) / 2, y };
+    if (s >= after) return;
+    const col = s === after - 1 ? css("amber") : css("ink");
+    el("polyline", { points: `${A.x},${A.y} ${A.x},${y} ${B.x},${y} ${B.x},${B.y}`, fill: "none", stroke: col, "stroke-width": 2 }, T);
+  });
+  order.forEach(i => { const t = el("text", { x: lx(i), y: D.y0 + D.h + 16, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: colOf[i] ? css(colOf[i]) : css("ink") }, T); t.textContent = HPTS[i].n; });
+  if (HC.cut > 1 && HC.cut <= nPts && nPts - HC.cut <= after) {
+    const lo = HC.merges[nPts - HC.cut - 1] ? HC.merges[nPts - HC.cut - 1].d : 0, hi = HC.merges[nPts - HC.cut].d;
+    const y = ly((lo + hi) / 2);
+    el("line", { x1: D.x0, y1: y, x2: D.x0 + D.w, y2: y, stroke: css("rose"), "stroke-width": 1.5, "stroke-dasharray": "6 4" }, T);
+    const t = el("text", { x: D.x0 + D.w, y: y - 5, "text-anchor": "end", "font-size": 11, fill: css("rose") }, T); t.textContent = `cut: ${HC.cut} groups`;
+  }
+  $("hcNext").disabled = HC.shown >= HC.merges.length;
+  $("hcAll").disabled = HC.shown >= HC.merges.length;
+}
+function hcReset() {
+  hcCompute(); HC.shown = 0; $("hcLog").innerHTML = "";
+  logLine($("hcLog"), `Start: 8 motors, 8 groups. Group distance = ${$("hcLink").selectedOptions[0].textContent.toLowerCase()}.`);
+  hcDraw();
+}
+function hcStep() {
+  if (HC.shown >= HC.merges.length) return;
+  const C = HC.merges[HC.shown++];
+  logLine($("hcLog"), `Merge ${HC.shown}: {${hcName(C.a)}} + {${hcName(C.b)}} at distance ${C.d.toFixed(2)}. ${HPTS.length - HC.shown} group${HPTS.length - HC.shown === 1 ? "" : "s"} left.`);
+}
+$("hcNext").onclick = () => { hcStep(); hcDraw(); };
+$("hcAll").onclick = () => { while (HC.shown < HC.merges.length) hcStep(); hcDraw(); };
+$("hcReset").onclick = hcReset;
+$("hcLink").onchange = e => { HC.link = e.target.value; hcReset(); };
+$("hcCut").oninput = e => { HC.cut = +e.target.value; $("hcCutOut").textContent = HC.cut; hcDraw(); };
+
+/* =====================================================================
+   DENSITY-BASED CLUSTERING (DBSCAN)
+   ===================================================================== */
+const D = { seed: 5, eps: 1.0, minPts: 4, pts: [], mode: "dbscan" };
+function dMake() {
+  const r = rng(D.seed), out = [];
+  for (let i = 0; i < 110; i++) { const a = r() * 2 * Math.PI, rad = 3.6 + gauss(r) * 0.22; out.push({ x: 5 + rad * Math.cos(a), y: 5 + rad * Math.sin(a) }); }
+  for (let i = 0; i < 30; i++) out.push({ x: 5 + gauss(r) * 0.45, y: 5 + gauss(r) * 0.45 });
+  for (let i = 0; i < 8; i++) out.push({ x: 0.4 + r() * 9.2, y: 0.4 + r() * 9.2 });
+  D.pts = out.map(p => ({ x: Math.min(9.8, Math.max(0.2, p.x)), y: Math.min(9.8, Math.max(0.2, p.y)) }));
+}
+function dbscan(pts, eps, minPts) {
+  const lab = new Array(pts.length).fill(undefined), core = new Array(pts.length).fill(false), e2 = eps * eps;
+  const nb = i => pts.map((p, j) => j).filter(j => d2(pts[i], pts[j]) <= e2);
+  let c = 0;
+  for (let i = 0; i < pts.length; i++) {
+    if (lab[i] !== undefined) continue;
+    const N0 = nb(i);
+    if (N0.length < minPts) { lab[i] = -1; continue; }
+    lab[i] = c; core[i] = true;
+    const queue = N0.filter(j => j !== i);
+    while (queue.length) {
+      const j = queue.shift();
+      if (lab[j] === -1) lab[j] = c;
+      if (lab[j] !== undefined) continue;
+      lab[j] = c;
+      const Nj = nb(j);
+      if (Nj.length >= minPts) { core[j] = true; Nj.forEach(k => { if (lab[k] === undefined || lab[k] === -1) queue.push(k); }); }
+    }
+    c++;
+  }
+  return { lab, core, n: c };
+}
+function dDraw() {
+  const svg = $("dPlot");
+  frame(svg, "temperature score", "vibration score");
+  let lab, core, n;
+  if (D.mode === "dbscan") ({ lab, core, n } = dbscan(D.pts, D.eps, D.minPts));
+  else { const res = kmeansRun(D.pts, 2, rng(3)); lab = res.a; core = lab.map(() => true); n = 2; res.c.forEach((c, j) => el("rect", { x: sx(c.x) - 8, y: sy(c.y) - 8, width: 16, height: 16, rx: 2, fill: css("panel"), stroke: css(PAL[j]), "stroke-width": 3.5 }, svg)); }
+  D.pts.forEach((p, i) => {
+    if (lab[i] === -1) {
+      const s = 5;
+      el("path", { d: `M${sx(p.x) - s},${sy(p.y) - s}L${sx(p.x) + s},${sy(p.y) + s}M${sx(p.x) + s},${sy(p.y) - s}L${sx(p.x) - s},${sy(p.y) + s}`, stroke: css("muted"), "stroke-width": 2 }, svg);
+    } else {
+      const col = css(PAL[lab[i] % PAL.length]);
+      el("circle", { cx: sx(p.x), cy: sy(p.y), r: core[i] ? 5 : 4.5, fill: core[i] ? col : css("panel"), stroke: col, "stroke-width": 2 }, svg);
+    }
+  });
+  if (D.mode === "dbscan") el("circle", { cx: sx(1.2), cy: sy(9.1), r: (D.eps / 10) * F.w, fill: "none", stroke: css("ink"), "stroke-dasharray": "3 3" }, svg);
+  if (D.mode === "dbscan") { const t = el("text", { x: sx(1.2) + (D.eps / 10) * F.w + 6, y: sy(9.1) + 4, "font-size": 11, fill: css("muted") }, svg); t.textContent = "radius"; }
+  const noise = lab.filter(v => v === -1).length;
+  $("dStats").innerHTML = `<dt>method</dt><dd>${D.mode === "dbscan" ? "density-based" : "k-means, k = 2"}</dd><dt>groups found</dt><dd>${n}</dd><dt>marked as noise</dt><dd>${noise} of ${D.pts.length}</dd>`;
+  let msg;
+  if (D.mode === "kmeans") msg = '<span class="pill warn">Ring cut in half</span><span class="note">Each point joins its nearest centre, so the ring is split down the middle and the strays are forced into groups.</span>';
+  else if (n === 2 && noise <= 14) msg = '<span class="pill ok">Ring and centre found</span><span class="note">Two groups that follow the shape of the data, with the strays left out.</span>';
+  else if (n <= 1) msg = '<span class="pill warn">Everything merged</span><span class="note">The radius is so large that the ring and the centre touch. Make it smaller.</span>';
+  else msg = `<span class="pill fail">${n} groups</span><span class="note">${noise > 20 ? "Too many points are noise: the radius is too small or the crowd size too large." : "The ring has broken into pieces. Try a slightly larger radius."}</span>`;
+  $("dStatus").innerHTML = msg;
+  $("dMode").textContent = D.mode === "dbscan" ? "Compare with k-means (k = 2)" : "Back to density-based";
+}
+$("dEps").oninput = e => { D.eps = +e.target.value; $("dEpsOut").textContent = D.eps.toFixed(2); D.mode = "dbscan"; dDraw(); };
+$("dMin").oninput = e => { D.minPts = +e.target.value; $("dMinOut").textContent = D.minPts; D.mode = "dbscan"; dDraw(); };
+$("dMode").onclick = () => { D.mode = D.mode === "dbscan" ? "kmeans" : "dbscan"; dDraw(); };
+$("dNew").onclick = () => { D.seed = (D.seed * 7 + 3) % 1013; dMake(); dDraw(); };
+
+/* =====================================================================
+   GROUPS TO PREDICTIONS
+   ===================================================================== */
+const GP = { pts: [], truth: [], stage: 0, cents: [], assign: null, names: [], asked: [], g: { x: 7, y: 7 }, thr: 2.5 };
+const CONDITIONS = ["healthy", "worn bearings", "cooling fault"];
+function gpMake() {
+  const r = rng(41), centres = [[2.2, 2.4], [7.8, 7.6], [7.6, 2.3]];
+  GP.pts = []; GP.truth = [];
+  centres.forEach(([cx, cy], k) => { for (let i = 0; i < 30; i++) { GP.pts.push({ x: clamp(cx + gauss(r) * 0.8), y: clamp(cy + gauss(r) * 0.8) }); GP.truth.push(k); } });
+  GP.stage = 0; GP.cents = []; GP.assign = null; GP.names = []; GP.asked = [];
+}
+function gpFind() {
+  // farthest-point start, then k-means: reliable for a classroom demo
+  const pts = GP.pts, c = [{ x: pts[0].x, y: pts[0].y }];
+  while (c.length < 3) { let bi = 0, bd = -1; pts.forEach((p, i) => { const d = Math.min(...c.map(q => d2(p, q))); if (d > bd) { bd = d; bi = i; } }); c.push({ x: pts[bi].x, y: pts[bi].y }); }
+  let cents = c, a = null;
+  for (let it = 0; it < 50; it++) {
+    a = pts.map(p => { let b = 0; cents.forEach((q, j) => { if (d2(p, q) < d2(p, cents[b])) b = j; }); return b; });
+    cents = cents.map((q, j) => { const m = pts.filter((p, i) => a[i] === j); return { x: m.reduce((s, p) => s + p.x, 0) / m.length, y: m.reduce((s, p) => s + p.y, 0) / m.length }; });
+  }
+  GP.cents = cents; GP.assign = a; GP.stage = 1;
+}
+function gpAsk() {
+  GP.asked = GP.cents.map((c, j) => { let bi = -1, bd = Infinity; GP.pts.forEach((p, i) => { if (GP.assign[i] === j && d2(p, c) < bd) { bd = d2(p, c); bi = i; } }); return bi; });
+  GP.names = GP.asked.map(i => CONDITIONS[GP.truth[i]]);
+  GP.stage = 2;
+}
+function gpDraw() {
+  const svg = $("gPlot");
+  frame(svg, "temperature score", "vibration score");
+  const groupCol = j => css(PAL[j]);
+  if (GP.stage >= 1) GP.cents.forEach((c, j) => el("circle", { cx: sx(c.x), cy: sy(c.y), r: (GP.thr / 10) * F.w, fill: groupCol(j), "fill-opacity": 0.06, stroke: groupCol(j), "stroke-dasharray": "4 4" }, svg));
+  GP.pts.forEach((p, i) => {
+    const col = GP.stage >= 1 ? groupCol(GP.assign[i]) : css("muted");
+    el("circle", { cx: sx(p.x), cy: sy(p.y), r: 4.5, fill: col, "fill-opacity": GP.stage >= 1 ? 0.9 : 0.55 }, svg);
+  });
+  if (GP.stage >= 2) GP.asked.forEach((i, j) => {
+    const p = GP.pts[i];
+    el("circle", { cx: sx(p.x), cy: sy(p.y), r: 9, fill: "none", stroke: css("ink"), "stroke-width": 2 }, svg);
+    const t = el("text", { x: sx(p.x) + 12, y: sy(p.y) - 12, "font-size": 12.5, "font-weight": 600, fill: css("ink"), stroke: css("panel"), "stroke-width": 4, "paint-order": "stroke" }, svg); t.textContent = GP.names[j];
+  });
+  if (GP.stage >= 1) GP.cents.forEach((c, j) => el("rect", { x: sx(c.x) - 7, y: sy(c.y) - 7, width: 14, height: 14, rx: 2, fill: css("panel"), stroke: groupCol(j), "stroke-width": 3 }, svg));
+  let gi = -1, gd = Infinity;
+  if (GP.stage >= 1) GP.cents.forEach((c, j) => { const d = Math.sqrt(d2(GP.g, c)); if (d < gd) { gd = d; gi = j; } });
+  const nowhere = GP.stage >= 1 && gd > GP.thr;
+  if (GP.stage >= 1 && !nowhere) el("line", { x1: sx(GP.g.x), y1: sy(GP.g.y), x2: sx(GP.cents[gi].x), y2: sy(GP.cents[gi].y), stroke: groupCol(gi), "stroke-dasharray": "4 4", "stroke-width": 1.5 }, svg);
+  drawG(svg, GP.g, nowhere ? css("rose") : gi >= 0 ? groupCol(gi) : css("ink"));
+  $("gLegend").innerHTML = GP.stage === 0 ? '<span><i class="sw" style="background:var(--muted);opacity:.55"></i>unlabelled motor</span><span><i class="sw sq" style="border:2px solid var(--ink)"></i>motor G</span>'
+    : GP.cents.map((c, j) => `<span><i class="sw" style="background:var(--${PAL[j]})"></i>${GP.stage >= 2 ? GP.names[j] : "group " + (j + 1)}</span>`).join("") + '<span><i class="sw" style="border:2px solid var(--ink)"></i>motor the engineer inspected</span>';
+  $("gFind").disabled = GP.stage >= 1;
+  $("gAsk").disabled = GP.stage !== 1;
+  $("gStats").innerHTML = `<dt>motors</dt><dd>${GP.pts.length}</dd><dt>labels used</dt><dd>${GP.stage >= 2 ? 3 : 0}</dd><dt>a neuron would need</dt><dd>${GP.pts.length} labels</dd>`;
+  let v, why = `G is at (${fmt(GP.g.x, 1)}, ${fmt(GP.g.y, 1)}).`;
+  if (GP.stage === 0) { v = '<span class="pill fail">No groups yet</span>'; why += " Press step 1 to find the groups."; }
+  else if (nowhere) { v = '<span class="pill warn">Fits nowhere: inspect</span>'; why += ` It is ${gd.toFixed(2)} from the nearest centre, more than the limit of ${GP.thr.toFixed(1)}. It looks like none of the known groups, and that alone is worth a visit.`; }
+  else if (GP.stage === 1) { v = `<span class="pill fail">Joins group ${gi + 1}</span>`; why += ` Nearest centre is group ${gi + 1}, at ${gd.toFixed(2)}. The group has no name yet: press step 2.`; }
+  else { const nm = GP.names[gi]; v = `<span class="pill ${nm === "healthy" ? "ok" : "fail"}">${nm}</span>`; why += ` Nearest centre is the "${nm}" group, at ${gd.toFixed(2)}. G inherits the name.`; }
+  $("gVerdict").innerHTML = v; $("gWhy").textContent = why;
+}
+$("gFind").onclick = () => { gpFind(); gpDraw(); };
+$("gAsk").onclick = () => { gpAsk(); gpDraw(); };
+$("gReset").onclick = () => { gpMake(); gpDraw(); };
+$("gThr").oninput = e => { GP.thr = +e.target.value; $("gThrOut").textContent = GP.thr.toFixed(1); gpDraw(); };
+dragG($("gPlot"), (x, y) => { GP.g = { x, y }; gpDraw(); });
+
+/* =====================================================================
+   tabs (hash routing)
+   ===================================================================== */
+const VIEWS = ["preparation", "neuron", "hidden", "overfitting", "kmeans", "hierarchical", "density", "predict"];
+function show() {
+  const h = (location.hash || "#preparation").slice(1);
+  const v = VIEWS.includes(h) ? h : "preparation";
+  VIEWS.forEach(n => { $("view-" + n).hidden = n !== v; });
+  document.querySelectorAll("nav.tabs a").forEach(a => { if (a.dataset.tab === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+}
+window.addEventListener("hashchange", show);
+
+nReset(false);
+pDraw();
+hDraw(); netInit(); netDraw();
+hcReset();
+dMake(); dDraw();
+gpMake(); gpDraw();
+kReset();
+oSample(); oDraw();
+show();
+})();
+</script>
+
+</body></html>
